@@ -411,19 +411,55 @@ function drawFloorPlan(rooms, meta = {}, floorName = "Floor Plan") {
     const ps = (v) => v * scale;             // logical size → canvas pixels
     const wt = Math.max(6, scale * 0.8);     // dynamic wall thickness
 
-    // ── 1. Draw room fills (white base; entrance=blue tint, staircase=light grey) ──
+    // ── Pre-defined Furniture SVG Data URIs ───────────────────────────────────
+    const SVGS = {
+        bed: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 120'%3E%3Crect width='100' height='120' rx='8' fill='%23fefefe' stroke='%23cecece' stroke-width='2'/%3E%3Crect x='10' y='10' width='80' height='30' rx='4' fill='%23e2e8f0'/%3E%3Crect x='15' y='15' width='32' height='20' rx='4' fill='%23ffffff' stroke='%23cecece'/%3E%3Crect x='53' y='15' width='32' height='20' rx='4' fill='%23ffffff' stroke='%23cecece'/%3E%3Crect x='10' y='50' width='80' height='60' rx='4' fill='%23cbd5e1'/%3E%3C/svg%3E",
+        sofa: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 60'%3E%3Crect width='100' height='60' rx='8' fill='%2394a3b8' stroke='%2364748b' stroke-width='2'/%3E%3Crect x='10' y='10' width='80' height='40' rx='4' fill='%23cbd5e1'/%3E%3Cpath d='M10 10 L30 30 L70 30 L90 10' stroke='%2364748b' stroke-width='2' fill='none'/%3E%3C/svg%3E",
+        dining: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='35' fill='%23d4d4d8' stroke='%23a1a1aa' stroke-width='2'/%3E%3Ccircle cx='50' cy='10' r='8' fill='%23e4e4e7' stroke='%23a1a1aa'/%3E%3Ccircle cx='50' cy='90' r='8' fill='%23e4e4e7' stroke='%23a1a1aa'/%3E%3Ccircle cx='10' cy='50' r='8' fill='%23e4e4e7' stroke='%23a1a1aa'/%3E%3Ccircle cx='90' cy='50' r='8' fill='%23e4e4e7' stroke='%23a1a1aa'/%3E%3C/svg%3E",
+        toilet: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 80'%3E%3Crect x='10' y='10' width='40' height='20' rx='4' fill='%23f1f5f9' stroke='%23cbd5e1' stroke-width='2'/%3E%3Cellipse cx='30' cy='50' rx='15' ry='20' fill='%23ffffff' stroke='%23cbd5e1' stroke-width='2'/%3E%3Cellipse cx='30' cy='50' rx='10' ry='15' fill='%23f8fafc' stroke='%23e2e8f0'/%3E%3C/svg%3E",
+        car: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 200'%3E%3Crect x='10' y='10' width='80' height='180' rx='20' fill='%23ef4444' stroke='%23b91c1c' stroke-width='2'/%3E%3Crect x='20' y='50' width='60' height='40' rx='5' fill='%231e293b'/%3E%3Crect x='20' y='120' width='60' height='50' rx='5' fill='%231e293b'/%3E%3C/svg%3E",
+        plant: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%2322c55e' stroke='%23166534' stroke-width='2'/%3E%3Ccircle cx='50' cy='50' r='20' fill='%234ade80'/%3E%3C/svg%3E"
+    };
+
+    // Helper to draw SVG on canvas
+    const drawSvgImage = (ctx, uri, x, y, w, h, rotation = 0) => {
+        const img = new Image();
+        img.src = uri;
+        // Draw synchronously if cached, otherwise it pops in on repaint
+        if (img.complete) {
+            ctx.save();
+            ctx.translate(x + w / 2, y + h / 2);
+            ctx.rotate(rotation);
+            ctx.drawImage(img, -w / 2, -h / 2, w, h);
+            ctx.restore();
+        } else {
+            img.onload = () => {
+                ctx.save();
+                ctx.translate(x + w / 2, y + h / 2);
+                ctx.rotate(rotation);
+                ctx.drawImage(img, -w / 2, -h / 2, w, h);
+                ctx.restore();
+            };
+        }
+    };
+
+    // ── 1. Draw floor fills (Textured/Colored Backgrounds) ──────────────────
     for (const room of rooms) {
         const rx = px(room.x), ry = py(room.y);
         const rw = ps(room.width || 1), rl = ps(room.length || 1);
-        const lc = (room.name || '').toLowerCase();
-        if (lc.includes('entrance')) ctx.fillStyle = '#e8f0fd'; // Blue tint
-        else if (lc.includes('stair')) ctx.fillStyle = '#f4f4f4'; // Slight grey
-        else ctx.fillStyle = '#fafafa';
+        const name = (room.name || '').toLowerCase();
+
+        ctx.fillStyle = '#f8fafc'; // default indoor tile
+        if (name.includes('garage') || name.includes('porch')) ctx.fillStyle = '#e2e8f0'; // concrete
+        else if (name.includes('bed') || name.includes('living')) ctx.fillStyle = '#fdfbf7'; // warm woodish
+        else if (name.includes('bath') || name.includes('toilet')) ctx.fillStyle = '#f0fdf4'; // clean tint
+        else if (name.includes('garden') || name.includes('yard')) ctx.fillStyle = '#dcfce7'; // grass
+        else if (name.includes('entrance')) ctx.fillStyle = '#e0e7ff'; // blue tint entrance
+
         ctx.fillRect(rx, ry, rw, rl);
     }
 
-
-    // -- 2. Draw thick walls (shared-wall-aware) --
+    // ── 2. Draw thick outer & inner walls with 3D shadow ────────────────────
     const TOUCH = 1.5;
     function hasNeighbour(room, side) {
         for (const other of rooms) {
@@ -439,124 +475,99 @@ function drawFloorPlan(rooms, meta = {}, floorName = "Floor Plan") {
         }
         return false;
     }
-    ctx.fillStyle = '#2c2c2c';
+
+    // Drop shadow for walls
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetY = 4;
+    ctx.fillStyle = '#1e293b'; // Very dark slate for structural walls
+
     for (const room of rooms) {
         const rx = px(room.x), ry = py(room.y);
         const rw = ps(room.width || 1), rl = ps(room.length || 1);
+
+        // Outer structural walls
         if (!hasNeighbour(room, 'top')) ctx.fillRect(rx, ry, rw, wt);
         if (!hasNeighbour(room, 'bottom')) ctx.fillRect(rx, ry + rl - wt, rw, wt);
         if (!hasNeighbour(room, 'left')) ctx.fillRect(rx, ry, wt, rl);
         if (!hasNeighbour(room, 'right')) ctx.fillRect(rx + rw - wt, ry, wt, rl);
-        ctx.strokeStyle = '#2c2c2c'; ctx.lineWidth = Math.max(2, wt * 0.4);
-        const dLine = (x1, y1, x2, y2) => { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); };
-        if (hasNeighbour(room, 'top')) dLine(rx, ry + wt / 2, rx + rw, ry + wt / 2);
-        if (hasNeighbour(room, 'bottom')) dLine(rx, ry + rl - wt / 2, rx + rw, ry + rl - wt / 2);
-        if (hasNeighbour(room, 'left')) dLine(rx + wt / 2, ry, rx + wt / 2, ry + rl);
-        if (hasNeighbour(room, 'right')) dLine(rx + rw - wt / 2, ry, rx + rw - wt / 2, ry + rl);
+
+        // Inner divider walls (thinner, no shadow)
+        ctx.save();
+        ctx.shadowColor = 'transparent'; // No shadow for inner lines
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = Math.max(2, wt * 0.5);
+        ctx.strokeRect(rx, ry, rw, rl);
+        ctx.restore();
     }
 
-    // -- 3. Door swing arcs (exterior walls only, direction varies) --
-    ctx.strokeStyle = '#2c2c2c'; ctx.lineWidth = 1.5;
+    // Reset shadow
+    ctx.shadowColor = 'transparent';
+
+    // ── 3. Draw Furniture Icons & Labels ──────────────────────────────────────
     for (const room of rooms) {
         const rx = px(room.x), ry = py(room.y);
         const rw = ps(room.width || 1), rl = ps(room.length || 1);
-        const doorW = Math.min(Math.min(rw, rl) * 0.38, 44);
-        const walls = ['bottom', 'right', 'left', 'top'].filter(s => !hasNeighbour(room, s));
-        if (!walls.length) continue;
-        const wall = walls[0];
-        ctx.fillStyle = '#fafafa'; ctx.strokeStyle = '#2c2c2c'; ctx.lineWidth = 1.5;
-        if (wall === 'bottom') {
-            const gx = rx + rw * 0.2, gy = ry + rl - wt;
-            ctx.fillRect(gx, gy, doorW, wt + 2);
-            ctx.beginPath(); ctx.moveTo(gx, gy + wt / 2); ctx.lineTo(gx + doorW, gy + wt / 2); ctx.stroke();
-            ctx.beginPath(); ctx.arc(gx, gy + wt / 2, doorW, 0, Math.PI / 2); ctx.stroke();
-        } else if (wall === 'right') {
-            const gx = rx + rw - wt, gy = ry + rl * 0.2;
-            ctx.fillRect(gx, gy, wt + 2, doorW);
-            ctx.beginPath(); ctx.moveTo(gx + wt / 2, gy); ctx.lineTo(gx + wt / 2, gy + doorW); ctx.stroke();
-            ctx.beginPath(); ctx.arc(gx + wt / 2, gy, doorW, Math.PI / 2, Math.PI); ctx.stroke();
-        } else if (wall === 'left') {
-            const gx = rx, gy = ry + rl * 0.2;
-            ctx.fillRect(gx - 1, gy, wt + 2, doorW);
-            ctx.beginPath(); ctx.moveTo(gx + wt / 2, gy); ctx.lineTo(gx + wt / 2, gy + doorW); ctx.stroke();
-            ctx.beginPath(); ctx.arc(gx + wt / 2, gy + doorW, doorW, -Math.PI / 2, 0); ctx.stroke();
-        } else {
-            const gx = rx + rw * 0.2, gy = ry;
-            ctx.fillRect(gx, gy - 1, doorW, wt + 2);
-            ctx.beginPath(); ctx.moveTo(gx, gy + wt / 2); ctx.lineTo(gx + doorW, gy + wt / 2); ctx.stroke();
-            ctx.beginPath(); ctx.arc(gx + doorW, gy + wt / 2, doorW, Math.PI, Math.PI * 1.5); ctx.stroke();
+        const cx = rx + rw / 2;
+        const cy = ry + rl / 2;
+        const name = (room.name || '').toLowerCase();
+
+        // Furniture placement
+        if (name.includes('bed')) {
+            const size = Math.min(rw, rl) * 0.5;
+            drawSvgImage(ctx, SVGS.bed, rx + wt + 5, ry + wt + 5, size * 0.8, size, 0);
+        } else if (name.includes('living')) {
+            const size = Math.min(rw, rl) * 0.6;
+            drawSvgImage(ctx, SVGS.sofa, rx + wt + 5, ry + wt + 5, size, size * 0.6, 0);
+        } else if (name.includes('dining')) {
+            const size = Math.min(rw, rl) * 0.4;
+            drawSvgImage(ctx, SVGS.dining, cx - size / 2, cy - size / 2, size, size, 0);
+        } else if (name.includes('bath') || name.includes('toilet')) {
+            const size = Math.min(rw, rl) * 0.4;
+            drawSvgImage(ctx, SVGS.toilet, rx + wt + 2, ry + wt + 2, size * 0.75, size, 0);
+        } else if (name.includes('garage') || name.includes('parking')) {
+            const rSize = Math.min(rw, rl) * 0.7;
+            drawSvgImage(ctx, SVGS.car, cx - rSize * 0.5, cy - rSize, rSize, rSize * 2, 0);
         }
-    }
 
-    // -- 4. Window symbols (exterior walls only) --
-    ctx.strokeStyle = '#2c2c2c'; ctx.lineWidth = 1;
-    for (const room of rooms) {
-        const lc = (room.name || '').toLowerCase();
-        if (lc.includes('corridor') || lc.includes('lobby') || lc.includes('garage') ||
-            lc.includes('pooja') || lc.includes('bathroom') || lc.includes('toilet') ||
-            lc.includes('wc') || lc.includes('entrance')) continue;
-        const rx = px(room.x), ry = py(room.y);
-        const rw = ps(room.width || 1), rl = ps(room.length || 1);
-        const drawWin = (wx, wy, ww, horiz) => {
-            ctx.fillStyle = '#fafafa';
-            if (horiz) ctx.fillRect(wx, wy - 1, ww, wt + 2); else ctx.fillRect(wx - 1, wy, wt + 2, ww);
-            ctx.fillStyle = '#2c2c2c';
-            for (let i = 0; i < 3; i++) {
-                const off = (wt / 4) + (i * wt / 3.5);
-                ctx.beginPath();
-                if (horiz) { ctx.moveTo(wx, wy + off); ctx.lineTo(wx + ww, wy + off); }
-                else { ctx.moveTo(wx + off, wy); ctx.lineTo(wx + off, wy + ww); }
-                ctx.stroke();
-            }
-        };
-        const winW = Math.min(rw * 0.42, 52), winH = Math.min(rl * 0.42, 52);
-        if (!hasNeighbour(room, 'top')) drawWin(rx + (rw - winW) / 2, ry, winW, true);
-        else if (!hasNeighbour(room, 'right')) drawWin(rx + rw - wt, ry + (rl - winH) / 2, winH, false);
-    }
-
-    // -- 5. Furniture silhouettes --
-
-    // ── 5. Furniture silhouettes ───────────────────────────────────────────────
-    ctx.strokeStyle = '#555';
-    ctx.lineWidth = 1;
-    for (const room of rooms) {
-        const rx = px(room.x), ry = py(room.y);
-        const rw = ps(room.width || 1), rl = ps(room.length || 1);
-        const lc = (room.name || '').toLowerCase();
-        drawFurniture(ctx, lc, rx + wt, ry + wt, rw - wt * 2, rl - wt * 2);
-    }
-
-    // ── 6. Room labels + area ─────────────────────────────────────────────────
-    for (const room of rooms) {
-        const rx = px(room.x), ry = py(room.y);
-        const rw = ps(room.width || 1), rl = ps(room.length || 1);
-        const cx = rx + rw / 2, cy = ry + rl / 2;
-
+        // Draw Text Label (with white pill background for legibility over textures)
         ctx.save();
         ctx.beginPath();
         ctx.rect(rx + wt + 2, ry + wt + 2, rw - wt * 2 - 4, rl - wt * 2 - 4);
         ctx.clip();
 
-        // Dynamically size font based on room size (both width and height)
-        const fs = Math.max(7, Math.min(13, rw / 8, rl / 4));
-        ctx.fillStyle = '#1a1a1a';
-        ctx.font = `600 ${fs}px Inter, sans-serif`;
+        const fsName = Math.max(8, Math.min(14, rw / 8, rl / 4));
+        const fsArea = Math.max(7, fsName - 2);
+        const sqm = ((room.width || 1) * (room.length || 1) * 0.093).toFixed(1);
+
+        // Measure text for pill background
+        ctx.font = `600 ${fsName}px Inter, sans-serif`;
+        const textW = ctx.measureText(room.name).width;
+        const pillW = textW + 16;
+        const pillH = rl > 35 ? (fsName + fsArea + 12) : (fsName + 10);
+        const pillY = rl > 35 ? (cy - pillH / 2) : (cy - pillH / 2);
+
+        // Draw subtle semi-transparent white pill behind text
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+        ctx.beginPath();
+        ctx.roundRect(cx - pillW / 2, pillY, pillW, pillH, 4);
+        ctx.fill();
+
+        ctx.fillStyle = '#0f172a';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        // Only draw area (m²) if we have enough vertical space
         if (rl > 35) {
-            ctx.fillText(room.name, cx, cy - fs * 0.7, rw - wt * 2 - 6);
-            const sqm = ((room.width || 1) * (room.length || 1) * 0.093).toFixed(1);
-            ctx.fillStyle = '#555';
-            ctx.font = `400 ${Math.max(7, fs - 2)}px Inter, sans-serif`;
-            ctx.fillText(`${sqm} m²`, cx, cy + fs * 0.7, rw - wt * 2 - 6);
+            ctx.fillText(room.name, cx, cy - fsName * 0.6, rw - wt * 2 - 6);
+            ctx.fillStyle = '#475569';
+            ctx.font = `400 ${fsArea}px Inter, sans-serif`;
+            ctx.fillText(`${sqm} m²`, cx, cy + fsName * 0.6, rw - wt * 2 - 6);
         } else {
-            // Room is very short vertically, just draw name in center
             ctx.fillText(room.name, cx, cy, rw - wt * 2 - 6);
         }
         ctx.restore();
     }
+
 
     // ── 7. North arrow (top-right) ────────────────────────────────────────────
     {
