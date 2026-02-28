@@ -56,48 +56,32 @@ class ModifyRequest(BaseModel):
 
 # ─── System Prompt ───────────────────────────────────────────────────────────────
 SYSTEM_PROMPT = (
-    'Output ONLY valid JSON, no markdown, no extra text. Schema: '
+    'Output ONLY valid JSON, no markdown. Schema: '
     '{"floors":[{"floor":1,"name":"Ground Floor","rooms":[{"name":"","x":0,"y":0,"width":0,"length":0}]}],'
     '"materials":[{"item":"","quantity":"","estimated_cost":"₹0"}],'
     '"vastu_notes":[{"room":"","direction":"","compliant":true,"note":""}]}. '
 
-    'FLOOR RULES: '
-    'Generate ONE entry in "floors" per storey of the building (e.g. 2-floor house → floors 1 and 2). '
-    'Floor 1 = Ground Floor, Floor 2 = First Floor, etc. '
-    'If building has a roof/terrace, add a final floor entry named "Terrace/Roof". '
-    'Each floor has its OWN independent coordinate grid starting at (0,0). '
-    'DO NOT share coordinates between floors. '
+    'FLOORS: One floors[] entry per storey. Each floor has its own coordinate grid from (0,0). '
+    'Add Terrace/Roof floor if requested. '
 
-    'LAYOUT RULES (CRITICAL — violations break the drawing): '
-    '1. NO two rooms on the same floor may overlap. '
-    '2. Place rooms in a grid left-to-right and top-to-bottom filling the plot footprint. '
-    '   Typical widths: bedroom=4, bathroom=2, kitchen=3, living=5, corridor=1.5, staircase=2, garage=4, dining=3. '
-    '3. All rooms on the same floor MUST be adjacent (touching). '
-    '4. Do NOT use Roof as a room name, use Terrace or Terrace/Roof floor instead. '
-    '5. STAIRS RULE: For any building with 2+ floors, include a room named exactly Staircase '
-    '   on EVERY floor at the same relative position so it aligns vertically across floors. '
-    '   Typical staircase: width=2, length=3 units. '
-    '6. ENTRANCE RULE: Ground Floor must have a room named exactly Main Entrance '
-    '   placed at the east or north edge (low x or low y). Typical: width=2, length=1.5. '
+    'LAYOUT (CRITICAL): '
+    'No two rooms on same floor may overlap. '
+    'Grid widths (units): bedroom=4, living=5, kitchen=3, bathroom=2, corridor=1.5, staircase=2, garage=4, dining=3. '
+    'All rooms must be adjacent (touching). '
+    'Multi-floor buildings: include room named "Staircase" (w=2,l=3) at same position on every floor. '
+    'Ground Floor: include room named "Main Entrance" (w=2,l=1.5) at east/north edge. '
+    'Never name a room "Roof". '
 
-    'VASTU RULES: Kitchen->South-East; Master Bedroom->South-West; '
-    'Living Room->North or North-East; Pooja/Prayer Room->North-East; '
-    'Bathrooms->North-West or South-East; Children Bedroom->West or North-West; '
-    'Study/Office->North or West; Dining Room->West; Garage->North-West; '
-    'Main Entrance->East or North. '\r\n
+    'VASTU: Kitchen=SE, MasterBedroom=SW, LivingRoom=N/NE, Pooja=NE, '
+    'Bathroom=NW/SE, ChildrenBedroom=W/NW, Study=N/W, Dining=W, Garage=NW, Entrance=E/N. '
 
-    'COST RULES: Realistic Indian rates, scale to plot_area and city. '
-    'For 1500 sqft Mumbai: RCC~100 cu.m, Cement~450 bags, Steel~3500 kg, Sand~70 cu.m, '
-    'Flooring~140 sq.m, Bricks~18000 nos, Doors~10 nos, Windows~12 nos, Paint~120 ltrs. '
-    'Total for 1500 sqft Mumbai = ₹45-70 lakhs. Adjust proportionally for other cities/sizes. '
-    'Include Foundation, RCC, Bricks, Cement, Steel, Sand, Flooring, Electricals, Plumbing, '
-    'Doors, Windows, Paint, Waterproofing, Labor. '
-    'IMPORTANT FORMAT RULE: All estimated_cost values MUST be absolute rupee amounts in Indian number format. '
-    'Use the format "₹X,XX,XXX" only. NEVER use "lakhs", "lakh", "L", or any other suffix. '
-    'Examples: ₹3,50,000 is correct. ₹3.5 lakhs is WRONG. ₹1,20,000 is correct. ₹1.2 lakhs is WRONG. '
-    'Quantity units: Foundation in sqft, RCC/Sand in cu.m, Cement in bags, Steel in kg, '
-    'Flooring/Waterproofing in sq.m, Bricks in nos, Paint in ltrs, Doors/Windows in nos, '
-    'Labor in man-days, Electricals/Plumbing as lump sum with proper quantity.'
+    'COST: Realistic Indian rates scaled to plot_area and city. '
+    '1500sqft Mumbai baseline: Foundation ₹4,50,000; RCC 100cu.m ₹12,00,000; '
+    'Cement 450bags ₹2,25,000; Steel 3500kg ₹3,50,000; Sand 70cu.m ₹1,40,000; '
+    'Flooring 140sq.m ₹3,50,000; Bricks 18000nos ₹1,35,000; Electricals ₹1,80,000; '
+    'Plumbing ₹1,20,000; Doors 10nos ₹1,00,000; Windows 12nos ₹1,20,000; '
+    'Paint 120ltrs ₹1,20,000; Waterproofing ₹50,000; Labor ₹5,00,000. '
+    'COST FORMAT: All estimated_cost = absolute rupees "₹X,XX,XXX". Never use "lakhs" suffix.'
 )
 
 MODIFY_PROMPT = (
@@ -133,14 +117,14 @@ async def generate_plan(request: PlanRequest):
     )
 
     payload = {
-        "model": "llama-3.1-8b-instant",   # fastest Groq model, great for structured JSON
+        "model": "llama-3.1-8b-instant",  # fast Groq model for structured JSON
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user",   "content": user_message},
         ],
-        "temperature": 0.3,
-        "max_tokens": 2048,
-        "response_format": {"type": "json_object"},  # enforces valid JSON output
+        "temperature": 0.15,
+        "max_tokens": 3500,
+        "response_format": {"type": "json_object"},
     }
 
     headers = {
