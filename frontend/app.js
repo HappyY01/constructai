@@ -409,7 +409,7 @@ function drawFloorPlan(rooms, meta = {}, floorName = "Floor Plan") {
     const px = (v) => v * scale + offsetX;   // logical x → canvas x
     const py = (v) => v * scale + offsetY;   // logical y → canvas y
     const ps = (v) => v * scale;             // logical size → canvas pixels
-    const wt = Math.max(6, scale * 0.8);     // dynamic wall thickness
+    const wt = Math.max(4, scale * 0.15);    // realistic wall thickness (0.15m)
 
     // ── Pre-defined Furniture SVG Data URIs ───────────────────────────────────
     const SVGS = {
@@ -504,6 +504,54 @@ function drawFloorPlan(rooms, meta = {}, floorName = "Floor Plan") {
     // Reset shadow
     ctx.shadowColor = 'transparent';
 
+    // -- 2.5 Draw doors (if shared wall exists, draw a white gap + door swing) --
+    ctx.strokeStyle = '#334155';
+    ctx.fillStyle = '#f8fafc';
+    for (const room of rooms) {
+        const rx = px(room.x), ry = py(room.y);
+        const rw = ps(room.width || 1), rl = ps(room.length || 1);
+        const doorS = scale * 1.5; // ~1.5m door
+
+        if (hasNeighbour(room, 'left')) {
+            ctx.fillRect(rx - 1, ry + scale * 0.5, wt + 2, doorS);
+            ctx.beginPath(); ctx.arc(rx + wt, ry + scale * 0.5, doorS, 0, Math.PI / 2); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(rx + wt, ry + scale * 0.5); ctx.lineTo(rx + wt, ry + scale * 0.5 + doorS); ctx.stroke();
+        } else if (hasNeighbour(room, 'bottom')) {
+            ctx.fillRect(rx + scale * 0.5, ry + rl - wt - 1, doorS, wt + 2);
+            ctx.beginPath(); ctx.arc(rx + scale * 0.5 + doorS, ry + rl - wt, doorS, Math.PI, Math.PI * 1.5); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(rx + scale * 0.5 + doorS, ry + rl - wt); ctx.lineTo(rx + scale * 0.5, ry + rl - wt); ctx.stroke();
+        } else if (hasNeighbour(room, 'right')) {
+            ctx.fillRect(rx + rw - wt - 1, ry + rl - scale * 0.5 - doorS, wt + 2, doorS);
+            ctx.beginPath(); ctx.arc(rx + rw - wt, ry + rl - scale * 0.5 - doorS, doorS, Math.PI / 2, Math.PI); ctx.stroke();
+        }
+    }
+
+    // -- 2.6 Draw windows on outer walls --
+    ctx.fillStyle = '#e2e8f0'; // Light gray/blue for glass
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 1;
+    for (const room of rooms) {
+        const rx = px(room.x), ry = py(room.y);
+        const rw = ps(room.width || 1), rl = ps(room.length || 1);
+        const winS = scale * 2; // ~2m window
+
+        const drawWin = (wx, wy, ww, wh) => {
+            ctx.fillRect(wx, wy, ww, wh);
+            ctx.strokeRect(wx, wy, ww, wh);
+            if (ww > wh) { // Horizontal window
+                ctx.beginPath(); ctx.moveTo(wx, wy + wh / 2); ctx.lineTo(wx + ww, wy + wh / 2); ctx.stroke();
+            } else { // Vertical window
+                ctx.beginPath(); ctx.moveTo(wx + ww / 2, wy); ctx.lineTo(wx + ww / 2, wy + wh); ctx.stroke();
+            }
+        };
+
+        if (!hasNeighbour(room, 'top') && rw > winS * 1.5) drawWin(rx + (rw - winS) / 2, ry - 1, winS, wt + 2);
+        if (!hasNeighbour(room, 'bottom') && rw > winS * 1.5) drawWin(rx + (rw - winS) / 2, ry + rl - wt - 1, winS, wt + 2);
+        if (!hasNeighbour(room, 'left') && rl > winS * 1.5) drawWin(rx - 1, ry + (rl - winS) / 2, wt + 2, winS);
+        if (!hasNeighbour(room, 'right') && rl > winS * 1.5) drawWin(rx + rw - wt - 1, ry + (rl - winS) / 2, wt + 2, winS);
+    }
+
+
     // ── 3. Draw Furniture Icons & Labels ──────────────────────────────────────
     for (const room of rooms) {
         const rx = px(room.x), ry = py(room.y);
@@ -512,19 +560,19 @@ function drawFloorPlan(rooms, meta = {}, floorName = "Floor Plan") {
         const cy = ry + rl / 2;
         const name = (room.name || '').toLowerCase();
 
-        // Furniture placement
+        // Furniture placement (centered to avoid wall/door overlap)
         if (name.includes('bed')) {
-            const size = Math.min(rw, rl) * 0.5;
-            drawSvgImage(ctx, SVGS.bed, rx + wt + 5, ry + wt + 5, size * 0.8, size, 0);
+            const size = Math.min(rw, rl) * 0.55;
+            drawSvgImage(ctx, SVGS.bed, cx - (size * 0.8) / 2, cy - size / 2, size * 0.8, size, 0);
         } else if (name.includes('living')) {
-            const size = Math.min(rw, rl) * 0.6;
-            drawSvgImage(ctx, SVGS.sofa, rx + wt + 5, ry + wt + 5, size, size * 0.6, 0);
+            const size = Math.min(rw, rl) * 0.65;
+            drawSvgImage(ctx, SVGS.sofa, cx - size / 2, cy - (size * 0.6) / 2, size, size * 0.6, 0);
         } else if (name.includes('dining')) {
-            const size = Math.min(rw, rl) * 0.4;
+            const size = Math.min(rw, rl) * 0.45;
             drawSvgImage(ctx, SVGS.dining, cx - size / 2, cy - size / 2, size, size, 0);
         } else if (name.includes('bath') || name.includes('toilet')) {
-            const size = Math.min(rw, rl) * 0.4;
-            drawSvgImage(ctx, SVGS.toilet, rx + wt + 2, ry + wt + 2, size * 0.75, size, 0);
+            const size = Math.min(rw, rl) * 0.45;
+            drawSvgImage(ctx, SVGS.toilet, cx - (size * 0.75) / 2, cy - size / 2, size * 0.75, size, 0);
         } else if (name.includes('garage') || name.includes('parking')) {
             const rSize = Math.min(rw, rl) * 0.7;
             drawSvgImage(ctx, SVGS.car, cx - rSize * 0.5, cy - rSize, rSize, rSize * 2, 0);
