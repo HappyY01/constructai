@@ -7,11 +7,10 @@
 'use strict';
 
 // ── Configuration ──────────────────────────────────────────────────────────────
-// In production, set this to your Render backend URL (e.g. https://constructai-backend.onrender.com)
-const PROD_BACKEND = 'https://constructai-backend.onrender.com';
+// Local: calls localhost:8000 | Vercel: same-origin (API served by serverless function)
 const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? 'http://localhost:8000'
-    : PROD_BACKEND;
+    : '';  // Vercel serves both frontend and API from same domain
 
 // Room type → canvas fill color mapping
 const ROOM_COLORS = {

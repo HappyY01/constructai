@@ -1,11 +1,43 @@
 {
     "version": 2,
-    "buildCommand": "echo 'Static site — no build needed'",
-    "outputDirectory": "frontend",
+    "builds": [
+        {
+            "src": "api/index.py",
+            "use": "@vercel/python"
+        },
+        {
+            "src": "frontend/**",
+            "use": "@vercel/static"
+        }
+    ],
     "routes": [
         {
+            "src": "/generate-plan",
+            "dest": "api/index.py"
+        },
+        {
+            "src": "/modify-plan",
+            "dest": "api/index.py"
+        },
+        {
+            "src": "/news",
+            "dest": "api/index.py"
+        },
+        {
+            "src": "/reverse-geocode",
+            "dest": "api/index.py"
+        },
+        {
+            "src": "/app.js",
+            "dest": "frontend/app.js"
+        },
+        {
+            "src": "/styles.css",
+            "dest": "frontend/styles.css"
+        },
+        {
             "src": "/(.*)",
-            "dest": "/$1"
+            "dest": "frontend/index.html"
         }
     ]
 }
