@@ -77,11 +77,13 @@ SYSTEM_PROMPT = (
     'Commercial/Hospital rules: OT/Surgery=W/S, Reception=NE/E, Wards=E/N, Pharmacy=SE/NW, Bathrooms=NW/W, Doctors Cabin=SW. '
     'Provide 5 to 7 vastu_notes ONLY for the rooms actually present in your layout. '
 
-    'COST: Realistic Indian rates heavily scaled to plot_area, city, and building_type. '
-    '1500sqft residential baseline: ~₹45,00,000 total. '
-    'RULE 1: Scale baseline linearly with area (e.g. 3000sqft = ~₹90L, 7000sqft = ~₹2.1Cr). '
-    'RULE 2: If building_type is hospital/commercial, multiply the scaled cost by 1.5x to 2x (e.g. 7000sqft hospital = ~₹3.5 to 4.5 Crores). '
-    'Provide realistic massive material quantities for large commercial builds. '
+    'COST (CRITICAL): Realistic Indian rates. Do NOT hallucinate zeroes. '
+    'ANCHOR 1 (1500sqft House = ~₹45,00,000): Foundation ₹4,50,000, RCC ₹12,00,000, Cement ₹2,25,000, Steel ₹3,50,000, '
+    'Sand ₹1,40,000, Flooring ₹3,50,000, Bricks ₹1,35,000, Electrical ₹1,80,000, Plumbing ₹1,20,000, Labor ₹5,00,000. '
+    'ANCHOR 2 (5000sqft House = ~₹1,50,00,000): Foundation ₹15,00,000, RCC ₹40,00,000, Cement ₹7,50,000, Steel ₹12,00,000, '
+    'Sand ₹4,50,000, Flooring ₹12,00,000, Bricks ₹4,00,000, Electrical ₹6,00,000, Plumbing ₹4,00,000, Labor ₹16,00,000. '
+    'RULE: Interpolate/scale based on plot_area. If building_type is Hospital/Commercial, multiply the final scaled cost by 2x. '
+    'Provide realistic massive material quantities (e.g. "5000 bags", "10 tons") for large builds. '
     'COST FORMAT: All estimated_cost = absolute rupees "₹X,XX,XXX". Never use "lakhs" suffix.'
 
 )
