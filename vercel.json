@@ -2,7 +2,7 @@
     "version": 2,
     "builds": [
         {
-            "src": "api/index.py",
+            "src": "backend/main.py",
             "use": "@vercel/python"
         },
         {
@@ -13,19 +13,19 @@
     "routes": [
         {
             "src": "/generate-plan",
-            "dest": "api/index.py"
+            "dest": "backend/main.py"
         },
         {
             "src": "/modify-plan",
-            "dest": "api/index.py"
+            "dest": "backend/main.py"
         },
         {
             "src": "/news",
-            "dest": "api/index.py"
+            "dest": "backend/main.py"
         },
         {
             "src": "/reverse-geocode",
-            "dest": "api/index.py"
+            "dest": "backend/main.py"
         },
         {
             "src": "/app.js",
