@@ -582,11 +582,11 @@ function drawFloorPlan(rooms, meta = {}, floorName = "Floor Plan") {
         ctx.font = '500 12px Inter, sans-serif';
         ctx.fillStyle = '#555';
         const dateStr = new Date().toLocaleDateString('en-IN');
-        ctx.fillText(`ConstructAI  ·  Generated ${dateStr}  ·  Vastu Compliant`, 160, ty + TITLE_H / 2 - 6);
+        ctx.fillText(`ConstructAI  ·  Generated ${dateStr}  ·  Vastu Compliant`, 220, ty + TITLE_H / 2 - 6);
 
         if (meta.location) {
             ctx.font = '400 11px Inter, sans-serif';
-            ctx.fillText(`Location: ${meta.location}`, 160, ty + TITLE_H / 2 + 10);
+            ctx.fillText(`Location: ${meta.location}`, 220, ty + TITLE_H / 2 + 10);
         }
 
         ctx.textAlign = 'right';

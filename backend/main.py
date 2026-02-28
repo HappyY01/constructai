@@ -66,22 +66,23 @@ SYSTEM_PROMPT = (
 
     'LAYOUT (CRITICAL): '
     'No two rooms on same floor may overlap. '
-    'Grid widths (units): bedroom=4, living=5, kitchen=3, bathroom=2, corridor=1.5, staircase=2, garage=4, dining=3. '
-    'All rooms must be adjacent (touching). '
-    'Multi-floor buildings: include room named "Staircase" (w=2,l=3) at same position on every floor. '
-    'Ground Floor: include room named "Main Entrance" (w=2,l=1.5) at east/north edge. '
+    'Scale: 1 unit = ~1 meter. Base sizes for 1500sqft house: bedroom=4x4, living=5x6. '
+    'CRITICAL: Scale room sizes up proportionally for larger plots (e.g. 5000sqft) or commercial/hospitals (e.g. Ward=10x10, Reception=15x10). DO NOT leave massive empty grids. '
+    'All rooms must be adjacent (touching) to form a cohesive building shape. '
+    'Multi-floor buildings: include room named "Staircase" (w=2.5,l=3.5) at exactly the same x,y coordinates on every floor. '
+    'Ground Floor: include room named "Main Entrance" (w=2,l=2) at outer edge. '
     'Never name a room "Roof". '
 
     'VASTU: Kitchen=SE, MasterBedroom=SW, LivingRoom=N/NE, Pooja=NE, '
     'Bathroom=NW/SE, ChildrenBedroom=W/NW, Study=N/W, Dining=W, Garage=NW, Entrance=E/N. '
 
-    'COST: Realistic Indian rates scaled to plot_area and city. '
-    '1500sqft Mumbai baseline: Foundation ₹4,50,000; RCC 100cu.m ₹12,00,000; '
-    'Cement 450bags ₹2,25,000; Steel 3500kg ₹3,50,000; Sand 70cu.m ₹1,40,000; '
-    'Flooring 140sq.m ₹3,50,000; Bricks 18000nos ₹1,35,000; Electricals ₹1,80,000; '
-    'Plumbing ₹1,20,000; Doors 10nos ₹1,00,000; Windows 12nos ₹1,20,000; '
-    'Paint 120ltrs ₹1,20,000; Waterproofing ₹50,000; Labor ₹5,00,000. '
+    'COST: Realistic Indian rates heavily scaled to plot_area, city, and building_type. '
+    '1500sqft residential baseline: ~₹45,00,000 total. '
+    'RULE 1: Scale baseline linearly with area (e.g. 3000sqft = ~₹90L, 5000sqft = ~₹1.5Cr). '
+    'RULE 2: If building_type is hospital/commercial/complex, multiply the scaled cost by 1.5x to 2x (e.g. 5000sqft hospital = ~₹2.5 to 3 Crores). '
+    'Provide realistic massive material quantities for large commercial builds. '
     'COST FORMAT: All estimated_cost = absolute rupees "₹X,XX,XXX". Never use "lakhs" suffix.'
+
 )
 
 MODIFY_PROMPT = (
