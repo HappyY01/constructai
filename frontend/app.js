@@ -537,18 +537,24 @@ function drawFloorPlan(rooms, meta = {}, floorName = "Floor Plan") {
         ctx.rect(rx + wt + 2, ry + wt + 2, rw - wt * 2 - 4, rl - wt * 2 - 4);
         ctx.clip();
 
-        const fs = Math.max(9, Math.min(13, rw / 8));
+        // Dynamically size font based on room size (both width and height)
+        const fs = Math.max(7, Math.min(13, rw / 8, rl / 4));
         ctx.fillStyle = '#1a1a1a';
         ctx.font = `600 ${fs}px Inter, sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(room.name, cx, cy - fs * 0.7, rw - wt * 2 - 6);
 
-        // Area in m²
-        const sqm = ((room.width || 1) * (room.length || 1) * 0.093).toFixed(1);
-        ctx.fillStyle = '#555';
-        ctx.font = `400 ${Math.max(8, fs - 2)}px Inter, sans-serif`;
-        ctx.fillText(`${sqm} m²`, cx, cy + fs * 0.7, rw - wt * 2 - 6);
+        // Only draw area (m²) if we have enough vertical space
+        if (rl > 35) {
+            ctx.fillText(room.name, cx, cy - fs * 0.7, rw - wt * 2 - 6);
+            const sqm = ((room.width || 1) * (room.length || 1) * 0.093).toFixed(1);
+            ctx.fillStyle = '#555';
+            ctx.font = `400 ${Math.max(7, fs - 2)}px Inter, sans-serif`;
+            ctx.fillText(`${sqm} m²`, cx, cy + fs * 0.7, rw - wt * 2 - 6);
+        } else {
+            // Room is very short vertically, just draw name in center
+            ctx.fillText(room.name, cx, cy, rw - wt * 2 - 6);
+        }
         ctx.restore();
     }
 
