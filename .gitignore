@@ -1,0 +1,38 @@
+# ConstructAI — Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+
+# Environment variables (NEVER commit these)
+.env
+backend/.env
+
+# Vercel
+.vercel/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Temp patch scripts
+fix_canvas.py
+fix_prompt.py
+patch_floors.py
+patch_title.py
+diagnose.py
+
+# Logs
+*.log

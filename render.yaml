@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: constructai-backend
+    env: python
+    region: singapore          # closest to India for low latency
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    rootDir: backend
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false            # set manually in Render dashboard
+      - key: GNEWS_API_KEY
+        sync: false
+      - key: OPENCAGE_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
